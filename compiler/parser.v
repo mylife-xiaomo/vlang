@@ -220,7 +220,9 @@ fn (p mut Parser) parse() {
 		case EOF:
 			p.log('end of parse()')
 			if true && !p.first_run() && p.fileis('test') {
-				out := os.create('/var/tmp/fmt.v')
+				out := os.create('/var/tmp/fmt.v') or {
+					return 
+				} 
 				out.appendln(p.scanner.fmt_out.str())
 				out.close()
 			}
@@ -1028,7 +1030,7 @@ fn (p mut Parser) assign_statement(v Var, ph int, is_map bool) {
 		println('allowing option asss')
 		expr := p.cgen.cur_line.right(pos)
 		left := p.cgen.cur_line.left(pos)
-		p.cgen.cur_line = left + 'opt_ok($expr)'
+		p.cgen.cur_line = left + 'opt_ok($expr, sizeof($expr_type))'
 	}
 	else if !p.builtin_pkg && !p.check_types_no_throw(expr_type, p.assigned_type) {
 		p.scanner.line_nr--
@@ -2983,7 +2985,7 @@ fn (p mut Parser) return_st() {
 			// Automatically wrap an object inside an option if the function returns an option
 			if p.cur_fn.typ.ends_with(expr_type) && p.cur_fn.typ.starts_with('Option_') {
 				p.cgen.set_placeholder(ph, 'opt_ok(& ')
-				p.gen(')')
+				p.gen(', sizeof($expr_type))')
 			}
 			p.check_types(expr_type, p.cur_fn.typ)
 		}

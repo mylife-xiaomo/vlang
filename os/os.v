@@ -37,7 +37,6 @@ fn init_os_args(argc int, c voidptr) []string {
 fn parse_windows_cmd_line(cmd byteptr) {
 	s := tos2(cmd)
 	vals := s.split(' ')
-	println(vals)
 	# os__args = vals;
 }
 
@@ -161,20 +160,17 @@ struct FileInfo {
 	size int
 }
 
-// fn open(file string) File? {
-// return open_file(file)
-// }
-pub fn open(path string) File {
-	return open_file(path)
+pub fn open(path string) ?File {
+println('NEW OPEN($path)') 
+	file := opt_fopen(path, 'r') 
+	return file 
 }
 
-fn open_file(file string) File {
-	return create_file2(file, 'r')
-}
-
-// `create` creates a file at a specified location and returns a writable `File` object.
-pub fn create(path string) File {
-	return create_file(path)
+// create creates a file at a specified location and returns a writable `File` object.
+pub fn create(path string) ?File {
+println('new create') 
+	file := opt_fopen(path, 'w') 
+	return file 
 }
 
 pub fn open_append(path string) File {
@@ -182,6 +178,7 @@ pub fn open_append(path string) File {
 }
 
 fn create_file(file string) File {
+	 
 	return create_file2(file, 'w')
 }
 
@@ -193,12 +190,25 @@ fn open_file_a(file string) File {
 	return create_file2(file, 'a')
 }
 
+fn opt_fopen(file string, mode string) ?File {
+	res := File {
+		cfile: C.fopen(file.cstr(), mode.cstr())
+	}
+	if isnil(res.cfile) {
+println('NIL!!!') 
+		return error('failed to open file "$file"')
+	}
+println('opt open is ok') 
+	return res
+}
+
 fn create_file2(file string, mode string) File {
 	res := File {
 		cfile: C.fopen(file.cstr(), mode.cstr())
 	}
 	if isnil(res.cfile) {
-		println('coudlnt create file "$file"')
+		//return error('failed to create file "$file"')
+		println('failed to create file "$file"')
 	}
 	return res
 }
@@ -417,7 +427,7 @@ pub fn user_os() string {
 	return 'unknown'
 }
 
-// `home_dir` returns path to user's home directory.
+// home_dir returns path to user's home directory.
 pub fn home_dir() string {
 	mut home := os.getenv('HOME')
 	$if windows {
@@ -429,22 +439,24 @@ pub fn home_dir() string {
 }
 
 pub fn write_file(path, text string) {
-	f := os.create(path)
+	f := os.create(path) or {
+		return 
+	} 
 	f.appendln(text)
 	f.close()
 }
 
 fn on_segfault(f voidptr) {
-#ifdef windows
-	return
-#endif
-#ifdef mac
-	# struct sigaction sa;
-	# memset(&sa, 0, sizeof(struct sigaction));
-	# sigemptyset(&sa.sa_mask);
-	# sa.sa_sigaction = f;
-	# sa.sa_flags   = SA_SIGINFO;
-	# sigaction(SIGSEGV, &sa, 0);
-#endif
+	$if windows { 
+		return
+	} 
+	$if mac { 
+		# struct sigaction sa;
+		# memset(&sa, 0, sizeof(struct sigaction));
+		# sigemptyset(&sa.sa_mask);
+		# sa.sa_sigaction = f;
+		# sa.sa_flags   = SA_SIGINFO;
+		# sigaction(SIGSEGV, &sa, 0);
+	} 
 }
 

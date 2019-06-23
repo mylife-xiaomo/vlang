@@ -91,13 +91,26 @@ fn _strlen(s byteptr) int {
 	// TODO don't call a C function, implement it in V
 	return C.strlen(s)
 }
-
-// `fn foo() ?Foo { return foo }` => `fn foo() ?Foo { return opt_ok(foo); }`
+/* 
 fn opt_ok(data voidptr) Option {
 	return Option {
 		data: data
 		ok: true
 	}
+} 
+*/ 
+
+// `fn foo() ?Foo { return foo }` => `fn foo() ?Foo { return opt_ok(foo); }`
+fn opt_ok(data voidptr, size int) Option {
+	mut res := Option {
+		//data: data
+data: malloc(size) 
+		ok: true
+	}
+// data is on stack, copy it 
+println('memcopying $size ...') 
+C.memcpy(res.data, data, size) 
+return res 
 }
 
 fn memdup(src voidptr, sz int) voidptr {
